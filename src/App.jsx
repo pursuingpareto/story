@@ -693,7 +693,7 @@ function App() {
         {[...history, { nodeId: currentNodeId }].map((entry, idx) => {
           const node = story[entry.nodeId];
           const firstLine = node?.text ? node.text.split('\n')[0] : 'Untitled';
-          const displayText = firstLine.length > 30 ? firstLine.substring(0, 30) + '...' : firstLine;
+          const displayText = firstLine.length > 15 ? firstLine.substring(0, 15) + '...' : firstLine;
           const totalLength = history.length + 1;
           const isCurrentNode = idx === totalLength - 1;
           
