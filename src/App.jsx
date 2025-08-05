@@ -220,6 +220,7 @@ function App() {
   const [linkingChoiceIndex, setLinkingChoiceIndex] = useState(null);
   const [isInitialized, setIsInitialized] = useState(false);
   const [nextNodeId, setNextNodeId] = useState(1);
+  const [openDropdownIndex, setOpenDropdownIndex] = useState(null);
   const currentNode = story[currentNodeId];
 
   // Helper function to generate next unique node ID
@@ -526,6 +527,37 @@ function App() {
     setLinkingChoiceIndex(null);
   }
 
+  function toggleDropdown(index) {
+    setOpenDropdownIndex(openDropdownIndex === index ? null : index);
+  }
+
+  function closeDropdown() {
+    setOpenDropdownIndex(null);
+  }
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (openDropdownIndex !== null) {
+        const dropdowns = document.querySelectorAll('.choice-actions');
+        let clickedInside = false;
+        dropdowns.forEach(dropdown => {
+          if (dropdown.contains(event.target)) {
+            clickedInside = true;
+          }
+        });
+        if (!clickedInside) {
+          closeDropdown();
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [openDropdownIndex]);
+
   function deleteOption(index) {
     const confirmed = confirm(`Are you sure you want to delete the choice "${currentNode.options[index].text}"?`);
     if (confirmed) {
@@ -795,50 +827,111 @@ function App() {
                 </div>
               ) : (
                 <>
-                  <button
-                    className="choice-button"
-                    onClick={() => handleChoice(option)}
-                    style={{
-                      color: getTextColor(currentNode.color),
-                      background: 'rgba(255, 255, 255, 0.2)',
-                      border: `2px solid ${getTextColor(currentNode.color)}`
-                    }}
-                  >
-                    {option.text}
-                  </button>
-                  <button
-                    className="edit-option-button"
-                    onClick={() => startEditOption(index)}
-                    style={{
-                      color: getTextColor(currentNode.color),
-                      background: 'rgba(255, 255, 255, 0.2)',
-                      border: `1px solid ${getTextColor(currentNode.color)}`
-                    }}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    className="link-option-button"
-                    onClick={() => startLinkChoice(index)}
-                    style={{
-                      color: getTextColor(currentNode.color),
-                      background: 'rgba(255, 255, 255, 0.2)',
-                      border: `1px solid ${getTextColor(currentNode.color)}`
-                    }}
-                  >
-                    Link
-                  </button>
-                  <button
-                    className="delete-option-button"
-                    onClick={() => deleteOption(index)}
-                    style={{
-                      color: getTextColor(currentNode.color),
-                      background: 'rgba(255, 255, 255, 0.2)',
-                      border: `1px solid ${getTextColor(currentNode.color)}`
-                    }}
-                  >
-                    Delete
-                  </button>
+                  <div className="choice-with-actions">
+                    <button
+                      className="choice-button"
+                      onClick={() => handleChoice(option)}
+                      style={{
+                        color: getTextColor(currentNode.color),
+                        background: 'rgba(255, 255, 255, 0.2)',
+                        border: `2px solid ${getTextColor(currentNode.color)}`
+                      }}
+                    >
+                      {option.text}
+                    </button>
+                    <div className="choice-actions">
+                      <button
+                        className="edit-icon-button"
+                        onClick={() => toggleDropdown(index)}
+                        style={{
+                          color: getTextColor(currentNode.color),
+                          background: 'rgba(255, 255, 255, 0.2)',
+                          border: `1px solid ${getTextColor(currentNode.color)}`,
+                          borderRadius: '50%',
+                          width: '32px',
+                          height: '32px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer',
+                          fontSize: '14px'
+                        }}
+                      >
+                        ✏️
+                      </button>
+                      {openDropdownIndex === index && (
+                        <div className="dropdown-menu" style={{
+                          position: 'absolute',
+                          top: '100%',
+                          right: '0',
+                          background: 'rgba(0, 0, 0, 0.9)',
+                          border: `1px solid ${getTextColor(currentNode.color)}`,
+                          borderRadius: '8px',
+                          padding: '4px',
+                          zIndex: 1000,
+                          minWidth: '120px'
+                        }}>
+                          <button
+                            className="dropdown-item"
+                            onClick={() => {
+                              startEditOption(index);
+                              closeDropdown();
+                            }}
+                            style={{
+                              color: '#ffffff',
+                              background: 'transparent',
+                              border: 'none',
+                              padding: '8px 12px',
+                              width: '100%',
+                              textAlign: 'left',
+                              cursor: 'pointer',
+                              fontSize: '14px'
+                            }}
+                          >
+                            ✏️ Edit
+                          </button>
+                          <button
+                            className="dropdown-item"
+                            onClick={() => {
+                              startLinkChoice(index);
+                              closeDropdown();
+                            }}
+                            style={{
+                              color: '#ffffff',
+                              background: 'transparent',
+                              border: 'none',
+                              padding: '8px 12px',
+                              width: '100%',
+                              textAlign: 'left',
+                              cursor: 'pointer',
+                              fontSize: '14px'
+                            }}
+                          >
+                            🔗 Link
+                          </button>
+                          <button
+                            className="dropdown-item"
+                            onClick={() => {
+                              deleteOption(index);
+                              closeDropdown();
+                            }}
+                            style={{
+                              color: '#ff6b6b',
+                              background: 'transparent',
+                              border: 'none',
+                              padding: '8px 12px',
+                              width: '100%',
+                              textAlign: 'left',
+                              cursor: 'pointer',
+                              fontSize: '14px'
+                            }}
+                          >
+                            🗑️ Delete
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </>
               )}
             </div>
