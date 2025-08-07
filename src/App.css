@@ -30,21 +30,24 @@ h1 {
   font-weight: bold;
 }
 
+/* Improved breadcrumb navigation */
 .breadcrumbs {
-  margin: 1rem 0;
-  font-size: 1.1em;
-  padding: 1rem;
-  border-radius: 10px;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 8px !important;
+  padding: 0.8rem !important;
+  margin-bottom: 1.5rem !important;
+  font-size: 0.9rem !important;
+  line-height: 1.4 !important;
 }
 
 .breadcrumb-item {
-  display: inline;
-  margin: 0;
+  transition: all 0.2s ease;
+}
+
+.breadcrumb-clickable:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .breadcrumb-clickable {
@@ -58,22 +61,58 @@ h1 {
   filter: brightness(1.2);
 }
 
-.story-text {
-  max-width: 100%;
-  background: rgba(255, 255, 255, 0.1);
-  padding: 1rem;
-  font-size: 1.2em;
-  line-height: 1.6;
-  text-align: left;
+/* App header and settings */
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.header-actions {
+  position: relative;
+}
+
+.settings-button {
   transition: all 0.3s ease;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  box-sizing: border-box;
+}
+
+.settings-button:hover {
+  transform: scale(1.1);
+  background: rgba(255, 255, 255, 0.2) !important;
+}
+
+.settings-menu {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+}
+
+.settings-item {
+  transition: all 0.2s ease;
+}
+
+.settings-item:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Improved story text area */
+.story-text {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border: 2px solid rgba(255, 255, 255, 0.3) !important;
+  border-radius: 12px !important;
+  padding: 1.5rem !important;
+  font-size: 1.1rem !important;
+  line-height: 1.6 !important;
+  margin-bottom: 2rem !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2) !important;
+  transition: all 0.3s ease !important;
 }
 
 .story-text:focus {
-  background: rgba(255, 255, 255, 0.15);
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.6) !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3) !important;
+  background: rgba(255, 255, 255, 0.2) !important;
 }
 
 .edit-button {
@@ -94,38 +133,31 @@ h1 {
   transform: translateY(-2px);
 }
 
+/* Improved choice buttons */
 .choice-buttons {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  width: 100%;
-  max-width: 600px;
+  margin-bottom: 2rem;
 }
 
 .choice-item {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-  justify-content: center;
+  margin-bottom: 1rem;
 }
 
 .choice-button {
-  flex: 1;
-  padding: 1rem 2rem;
-  border-radius: 12px;
-  border: none;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  font-size: 1.1em;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-  border: 2px solid transparent;
+  background: rgba(255, 255, 255, 0.2) !important;
+  border: 2px solid rgba(255, 255, 255, 0.4) !important;
+  border-radius: 12px !important;
+  padding: 1.2rem 1.5rem !important;
+  font-size: 1.1rem !important;
+  font-weight: 500 !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2) !important;
 }
 
 .choice-button:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.3) !important;
+  border-color: rgba(255, 255, 255, 0.6) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3) !important;
 }
 
 .choice-with-actions {
@@ -234,20 +266,22 @@ h1 {
 }
 
 .add-option-button {
-  padding: 1rem 2rem;
-  border-radius: 12px;
-  border: 2px dashed;
+  padding: 0.8rem 1.5rem;
+  border-radius: 8px;
+  border: 2px dashed rgba(255, 255, 255, 0.4);
   background: rgba(255, 255, 255, 0.1);
-  font-size: 1.1em;
+  font-size: 0.9rem;
   cursor: pointer;
   transition: all 0.3s ease;
   margin-top: 1rem;
+  opacity: 0.8;
 }
 
 .add-option-button:hover {
   background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.8);
-  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.6);
+  transform: translateY(-1px);
+  opacity: 1;
 }
 
 .no-options {
@@ -258,25 +292,23 @@ h1 {
   border: 1px dashed rgba(255, 255, 255, 0.3);
 }
 
+/* Compact navigation */
 .navigation-buttons {
-  display: flex;
-  gap: 1rem;
-  margin-top: 1rem;
+  margin-bottom: 1rem;
 }
 
 .nav-button {
-  padding: 0.8rem 1.5rem;
-  border-radius: 10px;
-  border: 1px solid;
-  background: rgba(255, 255, 255, 0.2);
-  font-size: 1em;
-  cursor: pointer;
-  transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.15) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  border-radius: 8px !important;
+  padding: 0.6rem 1rem !important;
+  font-size: 0.9rem !important;
+  transition: all 0.3s ease !important;
 }
 
 .nav-button:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.3);
-  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.25) !important;
+  transform: translateY(-1px) !important;
 }
 
 .nav-button:disabled {
@@ -409,13 +441,13 @@ h1 {
   transform: none !important;
 }
 
+/* Subtle color picker */
 .color-picker-section {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 8px !important;
+  padding: 0.8rem !important;
+  margin-bottom: 1rem !important;
 }
 
 .color-picker-section label {
@@ -679,4 +711,58 @@ h1 {
 .add-option-button:active,
 .nav-button:active {
   transform: translateY(0);
+}
+
+/* Mobile improvements */
+@media (max-width: 768px) {
+  .app-header {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+  
+  .app-header h1 {
+    font-size: 1.8rem;
+  }
+  
+  .story-text {
+    font-size: 1rem !important;
+    padding: 1rem !important;
+  }
+  
+  .choice-button {
+    font-size: 1rem !important;
+    padding: 1rem 1.2rem !important;
+  }
+  
+  .choice-with-actions {
+    gap: 4px;
+  }
+  
+  .edit-icon-button {
+    width: 28px !important;
+    height: 28px !important;
+    font-size: 12px !important;
+  }
+  
+  .dropdown-menu {
+    min-width: 100px !important;
+    right: -10px !important;
+  }
+  
+  .dropdown-item {
+    padding: 6px 8px !important;
+    font-size: 12px !important;
+  }
+  
+  .settings-menu {
+    min-width: 180px !important;
+    right: -20px !important;
+  }
+  
+  .color-picker-section {
+    flex-direction: column;
+    gap: 0.5rem;
+    text-align: center;
+  }
 }

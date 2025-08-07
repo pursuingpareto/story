@@ -221,6 +221,7 @@ function App() {
   const [isInitialized, setIsInitialized] = useState(false);
   const [nextNodeId, setNextNodeId] = useState(1);
   const [openDropdownIndex, setOpenDropdownIndex] = useState(null);
+  const [showSettingsMenu, setShowSettingsMenu] = useState(false);
   const currentNode = story[currentNodeId];
 
   // Helper function to generate next unique node ID
@@ -535,9 +536,14 @@ function App() {
     setOpenDropdownIndex(null);
   }
 
+  function toggleSettingsMenu() {
+    setShowSettingsMenu(!showSettingsMenu);
+  }
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
+      // Close choice dropdowns
       if (openDropdownIndex !== null) {
         const dropdowns = document.querySelectorAll('.choice-actions');
         let clickedInside = false;
@@ -550,13 +556,21 @@ function App() {
           closeDropdown();
         }
       }
+      
+      // Close settings menu
+      if (showSettingsMenu) {
+        const settingsMenu = document.querySelector('.settings-menu');
+        if (settingsMenu && !settingsMenu.contains(event.target)) {
+          setShowSettingsMenu(false);
+        }
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [openDropdownIndex]);
+  }, [openDropdownIndex, showSettingsMenu]);
 
   function deleteOption(index) {
     const confirmed = confirm(`Are you sure you want to delete the choice "${currentNode.options[index].text}"?`);
@@ -684,7 +698,135 @@ function App() {
         background: currentNode.color ? `linear-gradient(135deg, ${currentNode.color} 0%, ${adjustColor(currentNode.color, 20)} 100%)` : 'rgba(255, 255, 255, 0.1)'
       }}
     >
-      <h1 style={{ color: getTextColor(currentNode.color) }}>Choose Your Own Adventure</h1>
+      {/* Header with title and settings */}
+      <div className="app-header">
+        <h1 style={{ color: getTextColor(currentNode.color) }}>Choose Your Own Adventure</h1>
+        <div className="header-actions" style={{ position: 'relative' }}>
+          <button
+            className="settings-button"
+            onClick={toggleSettingsMenu}
+            style={{
+              color: getTextColor(currentNode.color),
+              background: 'rgba(255, 255, 255, 0.1)',
+              border: `1px solid ${getTextColor(currentNode.color)}`,
+              borderRadius: '50%',
+              width: '40px',
+              height: '40px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              fontSize: '18px'
+            }}
+          >
+            ⚙️
+          </button>
+          {showSettingsMenu && (
+            <div className="settings-menu" style={{
+              position: 'absolute',
+              top: '100%',
+              right: '0',
+              background: 'rgba(0, 0, 0, 0.95)',
+              border: `1px solid ${getTextColor(currentNode.color)}`,
+              borderRadius: '12px',
+              padding: '12px',
+              zIndex: 1000,
+              minWidth: '200px',
+              backdropFilter: 'blur(10px)'
+            }}>
+              <div className="settings-section">
+                <h4 style={{ color: '#ffffff', margin: '0 0 8px 0', fontSize: '14px' }}>Story Management</h4>
+                <button
+                  className="settings-item"
+                  onClick={() => {
+                    saveStoryToFile();
+                    setShowSettingsMenu(false);
+                  }}
+                  style={{
+                    color: '#ffffff',
+                    background: 'transparent',
+                    border: 'none',
+                    padding: '8px 12px',
+                    width: '100%',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    borderRadius: '6px'
+                  }}
+                >
+                  💾 Save Story
+                </button>
+                <label className="settings-item" style={{
+                  color: '#ffffff',
+                  background: 'transparent',
+                  border: 'none',
+                  padding: '8px 12px',
+                  width: '100%',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  borderRadius: '6px',
+                  display: 'block'
+                }}>
+                  📁 Load Story
+                  <input
+                    type="file"
+                    accept=".json"
+                    onChange={(e) => {
+                      loadStoryFromFile(e);
+                      setShowSettingsMenu(false);
+                    }}
+                    style={{ display: 'none' }}
+                  />
+                </label>
+                <button
+                  className="settings-item"
+                  onClick={() => {
+                    resetStory();
+                    setShowSettingsMenu(false);
+                  }}
+                  style={{
+                    color: '#ffffff',
+                    background: 'transparent',
+                    border: 'none',
+                    padding: '8px 12px',
+                    width: '100%',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    borderRadius: '6px'
+                  }}
+                >
+                  🆕 New Story
+                </button>
+              </div>
+              <div className="settings-section" style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid rgba(255, 255, 255, 0.2)' }}>
+                <h4 style={{ color: '#ffffff', margin: '0 0 8px 0', fontSize: '14px' }}>Tools</h4>
+                <button
+                  className="settings-item"
+                  onClick={() => {
+                    pruneOrphanedNodes();
+                    setShowSettingsMenu(false);
+                  }}
+                  style={{
+                    color: '#ffffff',
+                    background: 'transparent',
+                    border: 'none',
+                    padding: '8px 12px',
+                    width: '100%',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    borderRadius: '6px'
+                  }}
+                >
+                  🧹 Prune Orphaned Nodes
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Breadcrumb navigation */}
       <div className="breadcrumbs" style={{
@@ -693,7 +835,7 @@ function App() {
         {[...history, { nodeId: currentNodeId }].map((entry, idx) => {
           const node = story[entry.nodeId];
           const firstLine = node?.text ? node.text.split('\n')[0] : 'Untitled';
-          const displayText = firstLine.length > 15 ? firstLine.substring(0, 15) + '...' : firstLine;
+          const displayText = firstLine.length > 20 ? firstLine.substring(0, 20) + '...' : firstLine;
           const totalLength = history.length + 1;
           const isCurrentNode = idx === totalLength - 1;
           
@@ -1070,54 +1212,6 @@ function App() {
           }}
         >
           Go Back
-        </button>
-      </div>
-
-      {/* File operations */}
-      <div className="file-operations">
-        <button
-          className="file-button save-button"
-          onClick={saveStoryToFile}
-          style={{
-            color: getTextColor(currentNode.color),
-            background: 'rgba(255, 255, 255, 0.2)',
-            border: `1px solid ${getTextColor(currentNode.color)}`
-          }}
-        >
-          💾 Save Story to File
-        </button>
-        <label className="file-button load-button" style={{
-          color: getTextColor(currentNode.color),
-          background: 'rgba(255, 255, 255, 0.2)',
-          border: `1px solid ${getTextColor(currentNode.color)}`
-        }}>
-          📁 Load Story from File
-          <input
-            type="file"
-            accept=".json"
-            onChange={loadStoryFromFile}
-            style={{ display: 'none' }}
-          />
-        </label>
-        <button
-          className="nav-button"
-          onClick={resetStory}
-          style={{
-            color: getTextColor(currentNode.color),
-            borderColor: getTextColor(currentNode.color)
-          }}
-        >
-          New Story
-        </button>
-        <button
-          className="nav-button"
-          onClick={pruneOrphanedNodes}
-          style={{
-            color: getTextColor(currentNode.color),
-            borderColor: getTextColor(currentNode.color)
-          }}
-        >
-          🧹 Prune Orphaned Nodes
         </button>
       </div>
     </div>
