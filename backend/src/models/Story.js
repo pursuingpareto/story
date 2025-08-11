@@ -136,11 +136,17 @@ storySchema.methods.removeCollaborator = function(userId) {
 
 // Method to check if user has access
 storySchema.methods.userHasAccess = function(userId, requiredRole = 'viewer') {
-  if (this.owner.toString() === userId.toString()) return true;
-  
-  const collaborator = this.collaborators.find(
-    collab => collab.user.toString() === userId.toString()
-  );
+  if (!userId) return false;
+
+  // Handle both ObjectId and populated document for owner
+  const ownerId = this.owner && this.owner._id ? this.owner._id : this.owner;
+  if (ownerId && ownerId.toString() === userId.toString()) return true;
+
+  // Handle collaborators when `collaborators.user` may be populated
+  const collaborator = this.collaborators.find(collab => {
+    const collabUserId = collab.user && collab.user._id ? collab.user._id : collab.user;
+    return collabUserId && collabUserId.toString() === userId.toString();
+  });
   
   if (!collaborator) return false;
   
