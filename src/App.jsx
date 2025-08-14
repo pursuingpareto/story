@@ -1,6 +1,13 @@
 import { useState, useEffect } from 'react'
 import './App.css'
 
+// Variable types and their configurations
+const VARIABLE_TYPES = {
+  SCALE: 'scale',
+  COUNT: 'count', 
+  PROGRESSION: 'progression'
+};
+
 // Story data structure
 const initialStory = {
   "start": {
@@ -208,6 +215,42 @@ const initialStory = {
   }
 };
 
+// Initial variables state
+const initialVariables = {
+  "light-level": {
+    id: "light-level",
+    name: "Light Level",
+    type: VARIABLE_TYPES.SCALE,
+    value: 50,
+    min: 0,
+    max: 100,
+    minLabel: "Dark",
+    maxLabel: "Blinding Bright",
+    description: "Current light level in the environment"
+  },
+  "fish-count": {
+    id: "fish-count", 
+    name: "Fish",
+    type: VARIABLE_TYPES.COUNT,
+    value: 0,
+    description: "Number of fish collected"
+  },
+  "realization": {
+    id: "realization",
+    name: "Realization",
+    type: VARIABLE_TYPES.PROGRESSION,
+    value: 0,
+    stages: [
+      "Unsure",
+      "Suspecting", 
+      "Slowly Understanding",
+      "Cusp of Realization",
+      "Revelation"
+    ],
+    description: "Level of understanding about the mystery"
+  }
+};
+
 function App() {
   const [story, setStory] = useState(initialStory);
   const [currentNodeId, setCurrentNodeId] = useState("start");
@@ -222,6 +265,24 @@ function App() {
   const [nextNodeId, setNextNodeId] = useState(1);
   const [openDropdownIndex, setOpenDropdownIndex] = useState(null);
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
+  
+  // New state for variables system
+  const [variables, setVariables] = useState(initialVariables);
+  const [showVariablesPanel, setShowVariablesPanel] = useState(false);
+  const [showCreateVariable, setShowCreateVariable] = useState(false);
+  const [editingVariable, setEditingVariable] = useState(null);
+  const [newVariable, setNewVariable] = useState({
+    name: "",
+    type: VARIABLE_TYPES.SCALE,
+    value: 0,
+    min: 0,
+    max: 100,
+    minLabel: "",
+    maxLabel: "",
+    stages: [],
+    description: ""
+  });
+
   const currentNode = story[currentNodeId];
 
   // Helper function to generate next unique node ID
@@ -378,12 +439,13 @@ function App() {
         story: story,
         currentNodeId: currentNodeId,
         history: history,
-        nextNodeId: nextNodeId
+        nextNodeId: nextNodeId,
+        variables: variables
       };
       localStorage.setItem('adventure-app-state', JSON.stringify(appState));
       console.log('Saved to localStorage');
     }
-  }, [story, currentNodeId, history, nextNodeId, isInitialized]);
+  }, [story, currentNodeId, history, nextNodeId, variables, isInitialized]);
 
   useEffect(() => {
     // Load complete app state from localStorage on component mount
@@ -397,6 +459,7 @@ function App() {
         setCurrentNodeId(appState.currentNodeId || "start");
         setHistory(appState.history || []);
         setNextNodeId(appState.nextNodeId || 1);
+        setVariables(appState.variables || initialVariables);
       } catch (error) {
         console.error('Error parsing localStorage data:', error);
       }
@@ -416,6 +479,7 @@ function App() {
       currentNodeId: currentNodeId,
       history: history,
       nextNodeId: nextNodeId,
+      variables: variables,
       timestamp: new Date().toISOString()
     };
 
@@ -447,6 +511,9 @@ function App() {
             }
             if (storyData.nextNodeId) {
               setNextNodeId(storyData.nextNodeId);
+            }
+            if (storyData.variables) {
+              setVariables(storyData.variables);
             }
             alert('Story loaded successfully!');
           } else {
@@ -639,6 +706,7 @@ function App() {
     setCurrentNodeId("start");
     setHistory([]);
     setNextNodeId(1);
+    setVariables(initialVariables);
   }
 
   // Helper function to prune orphaned empty nodes
@@ -688,6 +756,106 @@ function App() {
     }
   };
 
+  // Variable management functions
+  const createVariable = () => {
+    if (!newVariable.name.trim()) {
+      alert("Please enter a variable name");
+      return;
+    }
+
+    const variableId = newVariable.name.toLowerCase().replace(/\s+/g, '-');
+    
+    if (variables[variableId]) {
+      alert("A variable with this name already exists");
+      return;
+    }
+
+    const variable = {
+      id: variableId,
+      name: newVariable.name.trim(),
+      type: newVariable.type,
+      value: newVariable.value,
+      description: newVariable.description.trim()
+    };
+
+    // Add type-specific properties
+    if (newVariable.type === VARIABLE_TYPES.SCALE) {
+      variable.min = newVariable.min;
+      variable.max = newVariable.max;
+      variable.minLabel = newVariable.minLabel.trim();
+      variable.maxLabel = newVariable.maxLabel.trim();
+    } else if (newVariable.type === VARIABLE_TYPES.PROGRESSION) {
+      variable.stages = newVariable.stages.filter(stage => stage.trim());
+      if (variable.stages.length === 0) {
+        alert("Please add at least one stage for progression variables");
+        return;
+      }
+    }
+
+    setVariables(prev => ({
+      ...prev,
+      [variableId]: variable
+    }));
+
+    // Reset form
+    setNewVariable({
+      name: "",
+      type: VARIABLE_TYPES.SCALE,
+      value: 0,
+      min: 0,
+      max: 100,
+      minLabel: "",
+      maxLabel: "",
+      stages: [],
+      description: ""
+    });
+    setShowCreateVariable(false);
+  };
+
+  const updateVariable = (variableId, updates) => {
+    setVariables(prev => ({
+      ...prev,
+      [variableId]: {
+        ...prev[variableId],
+        ...updates
+      }
+    }));
+  };
+
+  const deleteVariable = (variableId) => {
+    const confirmed = confirm(`Are you sure you want to delete the variable "${variables[variableId].name}"?`);
+    if (confirmed) {
+      setVariables(prev => {
+        const newVars = { ...prev };
+        delete newVars[variableId];
+        return newVars;
+      });
+    }
+  };
+
+  const addStage = () => {
+    if (newVariable.stages.length < 10) { // Limit to 10 stages
+      setNewVariable(prev => ({
+        ...prev,
+        stages: [...prev.stages, ""]
+      }));
+    }
+  };
+
+  const removeStage = (index) => {
+    setNewVariable(prev => ({
+      ...prev,
+      stages: prev.stages.filter((_, i) => i !== index)
+    }));
+  };
+
+  const updateStage = (index, value) => {
+    setNewVariable(prev => ({
+      ...prev,
+      stages: prev.stages.map((stage, i) => i === index ? value : stage)
+    }));
+  };
+
   // Get existing nodes for linking
   const existingNodes = Object.keys(story);
 
@@ -695,13 +863,35 @@ function App() {
     <div
       className="adventure-container"
       style={{
-        background: currentNode.color ? `linear-gradient(135deg, ${currentNode.color} 0%, ${adjustColor(currentNode.color, 20)} 100%)` : 'rgba(255, 255, 255, 0.1)'
+        background: currentNode.color ? `linear-gradient(135deg, ${currentNode.color} 0%, ${adjustColor(currentNode.color, 20)} 100%)` : 'rgba(255, 255, 255, 0.1)',
+        minHeight: '100vh',
+        padding: '16px'
       }}
     >
       {/* Header with title and settings */}
       <div className="app-header">
         <h1 style={{ color: getTextColor(currentNode.color) }}>Choose Your Own Adventure</h1>
         <div className="header-actions" style={{ position: 'relative' }}>
+          <button
+            className="variables-button"
+            onClick={() => setShowVariablesPanel(!showVariablesPanel)}
+            style={{
+              color: getTextColor(currentNode.color),
+              background: 'rgba(255, 255, 255, 0.1)',
+              border: `1px solid ${getTextColor(currentNode.color)}`,
+              borderRadius: '50%',
+              width: '40px',
+              height: '40px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              fontSize: '18px',
+              marginRight: '8px'
+            }}
+          >
+            📊
+          </button>
           <button
             className="settings-button"
             onClick={toggleSettingsMenu}
@@ -828,6 +1018,502 @@ function App() {
         </div>
       </div>
 
+      {/* Variables Panel */}
+      {showVariablesPanel && (
+        <div className="variables-panel" style={{
+          background: 'rgba(0, 0, 0, 0.9)',
+          border: `1px solid ${getTextColor(currentNode.color)}`,
+          borderRadius: '12px',
+          padding: '16px',
+          margin: '16px 0',
+          color: '#ffffff'
+        }}>
+          <div className="variables-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <h3 style={{ margin: 0, color: '#ffffff' }}>📊 Adventure Variables</h3>
+            <button
+              onClick={() => setShowCreateVariable(!showCreateVariable)}
+              style={{
+                color: '#ffffff',
+                background: 'rgba(255, 255, 255, 0.2)',
+                border: '1px solid #ffffff',
+                borderRadius: '8px',
+                padding: '8px 16px',
+                cursor: 'pointer',
+                fontSize: '14px'
+              }}
+            >
+              {showCreateVariable ? 'Cancel' : '+ Add Variable'}
+            </button>
+          </div>
+
+          {/* Create Variable Form */}
+          {showCreateVariable && (
+            <div className="create-variable-form" style={{
+              background: 'rgba(255, 255, 255, 0.1)',
+              borderRadius: '8px',
+              padding: '16px',
+              marginBottom: '16px'
+            }}>
+              <h4 style={{ margin: '0 0 12px 0', color: '#ffffff' }}>Create New Variable</h4>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '4px', fontSize: '14px' }}>Name:</label>
+                  <input
+                    type="text"
+                    value={newVariable.name}
+                    onChange={(e) => setNewVariable(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="Variable name"
+                    style={{
+                      width: '100%',
+                      padding: '8px',
+                      borderRadius: '4px',
+                      border: '1px solid #ccc',
+                      background: '#ffffff',
+                      color: '#000000'
+                    }}
+                  />
+                </div>
+                
+                <div>
+                  <label style={{ display: 'block', marginBottom: '4px', fontSize: '14px' }}>Type:</label>
+                  <select
+                    value={newVariable.type}
+                    onChange={(e) => setNewVariable(prev => ({ ...prev, type: e.target.value }))}
+                    style={{
+                      width: '100%',
+                      padding: '8px',
+                      borderRadius: '4px',
+                      border: '1px solid #ccc',
+                      background: '#ffffff',
+                      color: '#000000'
+                    }}
+                  >
+                    <option value={VARIABLE_TYPES.SCALE}>Scale (0-100 with labels)</option>
+                    <option value={VARIABLE_TYPES.COUNT}>Count (whole numbers)</option>
+                    <option value={VARIABLE_TYPES.PROGRESSION}>Progression (stages)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '4px', fontSize: '14px' }}>Description:</label>
+                <input
+                  type="text"
+                  value={newVariable.description}
+                  onChange={(e) => setNewVariable(prev => ({ ...prev, description: e.target.value }))}
+                  placeholder="What does this variable track?"
+                  style={{
+                    width: '100%',
+                    padding: '8px',
+                    borderRadius: '4px',
+                    border: '1px solid #ccc',
+                    background: '#ffffff',
+                    color: '#000000'
+                  }}
+                />
+              </div>
+
+              {/* Scale-specific fields */}
+              {newVariable.type === VARIABLE_TYPES.SCALE && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '12px', marginTop: '12px' }}>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '4px', fontSize: '14px' }}>Min Value:</label>
+                    <input
+                      type="number"
+                      value={newVariable.min}
+                      onChange={(e) => setNewVariable(prev => ({ ...prev, min: parseInt(e.target.value) || 0 }))}
+                      style={{
+                        width: '100%',
+                        padding: '8px',
+                        borderRadius: '4px',
+                        border: '1px solid #ccc',
+                        background: '#ffffff',
+                        color: '#000000'
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '4px', fontSize: '14px' }}>Max Value:</label>
+                    <input
+                      type="number"
+                      value={newVariable.max}
+                      onChange={(e) => setNewVariable(prev => ({ ...prev, max: parseInt(e.target.value) || 100 }))}
+                      style={{
+                        width: '100%',
+                        padding: '8px',
+                        borderRadius: '4px',
+                        border: '1px solid #ccc',
+                        background: '#ffffff',
+                        color: '#000000'
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '4px', fontSize: '14px' }}>Min Label:</label>
+                    <input
+                      type="text"
+                      value={newVariable.minLabel}
+                      onChange={(e) => setNewVariable(prev => ({ ...prev, minLabel: e.target.value }))}
+                      placeholder="e.g., Dark"
+                      style={{
+                        width: '100%',
+                        padding: '8px',
+                        borderRadius: '4px',
+                        border: '1px solid #ccc',
+                        background: '#ffffff',
+                        color: '#000000'
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '4px', fontSize: '14px' }}>Max Label:</label>
+                    <input
+                      type="text"
+                      value={newVariable.maxLabel}
+                      onChange={(e) => setNewVariable(prev => ({ ...prev, maxLabel: e.target.value }))}
+                      placeholder="e.g., Bright"
+                      style={{
+                        width: '100%',
+                        padding: '8px',
+                        borderRadius: '4px',
+                        border: '1px solid #ccc',
+                        background: '#ffffff',
+                        color: '#000000'
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Progression-specific fields */}
+              {newVariable.type === VARIABLE_TYPES.PROGRESSION && (
+                <div style={{ marginTop: '12px' }}>
+                  <label style={{ display: 'block', marginBottom: '4px', fontSize: '14px' }}>
+                    Stages ({newVariable.stages.length}/10):
+                  </label>
+                  {newVariable.stages.map((stage, index) => (
+                    <div key={index} style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                      <input
+                        type="text"
+                        value={stage}
+                        onChange={(e) => updateStage(index, e.target.value)}
+                        placeholder={`Stage ${index + 1}`}
+                        style={{
+                          flex: 1,
+                          padding: '8px',
+                          borderRadius: '4px',
+                          border: '1px solid #ccc',
+                          background: '#ffffff',
+                          color: '#000000'
+                        }}
+                      />
+                      <button
+                        onClick={() => removeStage(index)}
+                        style={{
+                          padding: '8px 12px',
+                          borderRadius: '4px',
+                          border: '1px solid #ff6b6b',
+                          background: '#ff6b6b',
+                          color: '#ffffff',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                  {newVariable.stages.length < 10 && (
+                    <button
+                      onClick={addStage}
+                      style={{
+                        padding: '8px 16px',
+                        borderRadius: '4px',
+                        border: '1px solid #4CAF50',
+                        background: '#4CAF50',
+                        color: '#ffffff',
+                        cursor: 'pointer',
+                        fontSize: '14px'
+                      }}
+                    >
+                      + Add Stage
+                    </button>
+                  )}
+                </div>
+              )}
+
+              <div style={{ marginTop: '16px', textAlign: 'right' }}>
+                <button
+                  onClick={createVariable}
+                  disabled={!newVariable.name.trim()}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '4px',
+                    border: '1px solid #4CAF50',
+                    background: '#4CAF50',
+                    color: '#ffffff',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    marginLeft: '8px'
+                  }}
+                >
+                  Create Variable
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Variables List */}
+          <div className="variables-list">
+            {Object.keys(variables).length === 0 ? (
+              <p style={{ textAlign: 'center', opacity: 0.7, fontStyle: 'italic' }}>
+                No variables created yet. Create your first variable to start tracking your adventure!
+              </p>
+            ) : (
+              Object.entries(variables).map(([variableId, variable]) => (
+                <div key={variableId} className="variable-item" style={{
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  borderRadius: '8px',
+                  padding: '12px',
+                  marginBottom: '8px',
+                  border: '1px solid rgba(255, 255, 255, 0.2)'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                    <div>
+                      <h4 style={{ margin: '0 0 4px 0', color: '#ffffff' }}>{variable.name}</h4>
+                      <p style={{ margin: '0', fontSize: '12px', opacity: 0.8 }}>{variable.description}</p>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button
+                        onClick={() => setEditingVariable(editingVariable === variableId ? null : variableId)}
+                        style={{
+                          padding: '4px 8px',
+                          borderRadius: '4px',
+                          border: '1px solid #FFD700',
+                          background: '#FFD700',
+                          color: '#000000',
+                          cursor: 'pointer',
+                          fontSize: '12px'
+                        }}
+                      >
+                        ✏️
+                      </button>
+                      <button
+                        onClick={() => deleteVariable(variableId)}
+                        style={{
+                          padding: '4px 8px',
+                          borderRadius: '4px',
+                          border: '1px solid #ff6b6b',
+                          background: '#ff6b6b',
+                          color: '#ffffff',
+                          cursor: 'pointer',
+                          fontSize: '12px'
+                        }}
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Variable Display */}
+                  <div className="variable-display">
+                    {variable.type === VARIABLE_TYPES.SCALE && (
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                          <span style={{ fontSize: '12px', opacity: 0.8 }}>{variable.minLabel}</span>
+                          <span style={{ fontSize: '12px', opacity: 0.8 }}>{variable.maxLabel}</span>
+                        </div>
+                        <input
+                          type="range"
+                          min={variable.min}
+                          max={variable.max}
+                          value={variable.value}
+                          onChange={(e) => updateVariable(variableId, { value: parseInt(e.target.value) })}
+                          style={{ width: '100%' }}
+                        />
+                        <div style={{ textAlign: 'center', marginTop: '4px' }}>
+                          <span style={{ fontSize: '16px', fontWeight: 'bold' }}>{variable.value}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {variable.type === VARIABLE_TYPES.COUNT && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <button
+                          onClick={() => updateVariable(variableId, { value: Math.max(0, variable.value - 1) })}
+                          style={{
+                            padding: '8px 12px',
+                            borderRadius: '4px',
+                            border: '1px solid #ff6b6b',
+                            background: '#ff6b6b',
+                            color: '#ffffff',
+                            cursor: 'pointer',
+                            fontSize: '16px'
+                          }}
+                        >
+                          -
+                        </button>
+                        <span style={{ fontSize: '24px', fontWeight: 'bold', minWidth: '40px', textAlign: 'center' }}>
+                          {variable.value}
+                        </span>
+                        <button
+                          onClick={() => updateVariable(variableId, { value: variable.value + 1 })}
+                          style={{
+                            padding: '8px 12px',
+                            borderRadius: '4px',
+                            border: '1px solid #4CAF50',
+                            background: '#4CAF50',
+                            color: '#ffffff',
+                            cursor: 'pointer',
+                            fontSize: '16px'
+                          }}
+                        >
+                          +
+                        </button>
+                      </div>
+                    )}
+
+                    {variable.type === VARIABLE_TYPES.PROGRESSION && (
+                      <div>
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                          {variable.stages.map((stage, index) => (
+                            <button
+                              key={index}
+                              onClick={() => updateVariable(variableId, { value: index })}
+                              style={{
+                                padding: '6px 12px',
+                                borderRadius: '16px',
+                                border: `2px solid ${index === variable.value ? '#4CAF50' : 'rgba(255, 255, 255, 0.3)'}`,
+                                background: index === variable.value ? '#4CAF50' : 'transparent',
+                                color: index === variable.value ? '#ffffff' : 'rgba(255, 255, 255, 0.8)',
+                                cursor: 'pointer',
+                                fontSize: '12px',
+                                transition: 'all 0.2s'
+                              }}
+                            >
+                              {stage}
+                            </button>
+                          ))}
+                        </div>
+                        <div style={{ textAlign: 'center' }}>
+                          <span style={{ fontSize: '14px', opacity: 0.8 }}>
+                            Current: {variable.stages[variable.value]}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Edit Variable Form */}
+                  {editingVariable === variableId && (
+                    <div style={{
+                      background: 'rgba(0, 0, 0, 0.3)',
+                      borderRadius: '8px',
+                      padding: '12px',
+                      marginTop: '12px'
+                    }}>
+                      <h5 style={{ margin: '0 0 8px 0', color: '#ffffff' }}>Edit Variable</h5>
+                      
+                      <div style={{ marginBottom: '8px' }}>
+                        <label style={{ display: 'block', marginBottom: '4px', fontSize: '12px' }}>Name:</label>
+                        <input
+                          type="text"
+                          value={variable.name}
+                          onChange={(e) => updateVariable(variableId, { name: e.target.value })}
+                          style={{
+                            width: '100%',
+                            padding: '6px',
+                            borderRadius: '4px',
+                            border: '1px solid #ccc',
+                            background: '#ffffff',
+                            color: '#000000',
+                            fontSize: '12px'
+                          }}
+                        />
+                      </div>
+
+                      <div style={{ marginBottom: '8px' }}>
+                        <label style={{ display: 'block', marginBottom: '4px', fontSize: '12px' }}>Description:</label>
+                        <input
+                          type="text"
+                          value={variable.description}
+                          onChange={(e) => updateVariable(variableId, { description: e.target.value })}
+                          style={{
+                            width: '100%',
+                            padding: '6px',
+                            borderRadius: '4px',
+                            border: '1px solid #ccc',
+                            background: '#ffffff',
+                            color: '#000000',
+                            fontSize: '12px'
+                          }}
+                        />
+                      </div>
+
+                      {variable.type === VARIABLE_TYPES.SCALE && (
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                          <div>
+                            <label style={{ display: 'block', marginBottom: '4px', fontSize: '12px' }}>Min Label:</label>
+                            <input
+                              type="text"
+                              value={variable.minLabel}
+                              onChange={(e) => updateVariable(variableId, { minLabel: e.target.value })}
+                              style={{
+                                width: '100%',
+                                padding: '6px',
+                                borderRadius: '4px',
+                                border: '1px solid #ccc',
+                                background: '#ffffff',
+                                color: '#000000',
+                                fontSize: '12px'
+                              }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: 'block', marginBottom: '4px', fontSize: '12px' }}>Max Label:</label>
+                            <input
+                              type="text"
+                              value={variable.maxLabel}
+                              onChange={(e) => updateVariable(variableId, { maxLabel: e.target.value })}
+                              style={{
+                                width: '100%',
+                                padding: '6px',
+                                borderRadius: '4px',
+                                border: '1px solid #ccc',
+                                background: '#ffffff',
+                                color: '#000000',
+                                fontSize: '12px'
+                              }}
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      <div style={{ marginTop: '12px', textAlign: 'right' }}>
+                        <button
+                          onClick={() => setEditingVariable(null)}
+                          style={{
+                            padding: '6px 12px',
+                            borderRadius: '4px',
+                            border: '1px solid #ccc',
+                            background: '#ccc',
+                            color: '#000000',
+                            cursor: 'pointer',
+                            fontSize: '12px'
+                          }}
+                        >
+                          Done
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Breadcrumb navigation */}
       <div className="breadcrumbs" style={{
         color: getTextColor(currentNode.color), border: `1px solid ${getTextColor(currentNode.color)}`
@@ -950,22 +1636,22 @@ function App() {
               ) : isLinkingChoice && linkingChoiceIndex === index ? (
                 <div className="link-choice-inline">
                                      <LinkChoiceInterface
-                     choiceText={option.text}
-                     onCancel={cancelLinkChoice}
-                     onLinkToExisting={linkToExistingNode}
-                     onCreateNew={() => {
-                       // Remove the existing option and add a new one with the same text
-                       const updatedOptions = [...currentNode.options];
-                       updatedOptions.splice(index, 1);
-                       
-                       // Create new node and add the option
-                       createNewNodeAndLink(option.text);
-                       
-                       setIsLinkingChoice(false);
-                       setLinkingChoiceIndex(null);
-                     }}
-                     currentLinkId={option.nextId}
-                   />
+                   choiceText={option.text}
+                   onCancel={cancelLinkChoice}
+                   onLinkToExisting={linkToExistingNode}
+                   onCreateNew={() => {
+                     // Remove the existing option and add a new one with the same text
+                     const updatedOptions = [...currentNode.options];
+                     updatedOptions.splice(index, 1);
+                     
+                     // Create new node and add the option
+                     createNewNodeAndLink(option.text);
+                     
+                     setIsLinkingChoice(false);
+                     setLinkingChoiceIndex(null);
+                   }}
+                   currentLinkId={option.nextId}
+                 />
                 </div>
               ) : (
                 <>
@@ -1213,6 +1899,52 @@ function App() {
         >
           Go Back
         </button>
+      </div>
+
+      {/* Simple Variables List */}
+      <div className="variables-summary" style={{
+        marginTop: '24px',
+        padding: '16px',
+        background: 'rgba(0, 0, 0, 0.1)',
+        borderRadius: '8px',
+        border: `1px solid ${getTextColor(currentNode.color)}`
+      }}>
+        <h3 style={{ 
+          margin: '0 0 12px 0', 
+          color: getTextColor(currentNode.color),
+          fontSize: '18px'
+        }}>
+          📊 Current Variables
+        </h3>
+        {Object.keys(variables).length === 0 ? (
+          <p style={{ 
+            color: getTextColor(currentNode.color),
+            fontStyle: 'italic',
+            opacity: 0.7
+          }}>
+            No variables created yet.
+          </p>
+        ) : (
+          <ul style={{
+            margin: 0,
+            paddingLeft: '20px',
+            color: getTextColor(currentNode.color)
+          }}>
+            {Object.entries(variables).map(([variableId, variable]) => (
+              <li key={variableId} style={{ marginBottom: '8px' }}>
+                <strong>{variable.name}:</strong> {
+                  variable.type === VARIABLE_TYPES.SCALE 
+                    ? `${variable.value} (${variable.minLabel} to ${variable.maxLabel})`
+                    : variable.type === VARIABLE_TYPES.COUNT
+                    ? `${variable.value}`
+                    : variable.type === VARIABLE_TYPES.PROGRESSION
+                    ? `${variable.stages[variable.value]}`
+                    : `${variable.value}`
+                }
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </div>
   );

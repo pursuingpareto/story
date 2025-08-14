@@ -1,0 +1,33 @@
+Story App User Story:
+User will see a page title of “Choose Your Own Adventure” 
+User will be able to view the most recent text in the text adventure
+User will be able to see history of choices
+User will be able to interact with history of choices
+User will be able to enter text
+User will have Choices
+User can select a choice
+    For a Choice, User can
+        Edit the choice
+        Link the Choice
+        Delete the Choice
+    The User can add a new Choice
+    The user can set the color of the choice
+        User is able to select from a variety of colors
+        User will see that Choices retain their color
+        User has the ability to reverse their choice
+For the story they are creating, User has the ability to
+    Save the Story to File
+    Load the Story from File
+    Create a New Story
+    Prune Orphaned Nodes or Choices of their story
+User will be able to create variables for their story
+    Currently, these types of variables are available to the user
+        Scale of 1 to 100, with a min label and max label 
+            E.g. Light Level: 0, dark, to 100, Blinding Light
+        A simple whole number count
+            E.g. Fish: 5, 10, or 100, etc
+        A series of statuses
+            E.g. Realization: Confused --> Suspecting --> Overwhelmed --> Cusp of Realization --> REVELATION
+        The variables and their statuses will be visible to the user 
+        The user will be able to create, edit, and delete variables
+
