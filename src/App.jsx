@@ -283,6 +283,11 @@ function App() {
     description: ""
   });
 
+  // New state for noun detection and variable suggestions
+  const [lastCreatedChoice, setLastCreatedChoice] = useState(null);
+  const [showNounSuggestions, setShowNounSuggestions] = useState(false);
+  const [suggestedNouns, setSuggestedNouns] = useState([]);
+
   const currentNode = story[currentNodeId];
 
   // Helper function to generate next unique node ID
@@ -658,9 +663,29 @@ function App() {
     setNewOptionText("");
   }
 
-  function saveNewOption() {
+  async function saveNewOption() {
     if (newOptionText.trim()) {
-      createNewNodeAndLink(newOptionText);
+      console.log('Creating new option:', newOptionText);
+      const newChoiceId = createNewNodeAndLink(newOptionText);
+      
+      // Detect common nouns in the new choice using dictionary API
+      try {
+        const detectedNouns = await detectCommonNouns(newOptionText);
+        console.log('Detected nouns:', detectedNouns);
+        if (detectedNouns.length > 0) {
+          console.log('Setting noun suggestions:', detectedNouns);
+          setSuggestedNouns(detectedNouns);
+          setLastCreatedChoice(newOptionText);
+          setShowNounSuggestions(true);
+        } else {
+          console.log('No nouns detected, hiding suggestions');
+          setShowNounSuggestions(false);
+        }
+      } catch (error) {
+        console.error('Error detecting nouns:', error);
+        setShowNounSuggestions(false);
+      }
+      
       setIsAddingNewOption(false);
       setNewOptionText("");
     }
@@ -810,6 +835,7 @@ function App() {
       description: ""
     });
     setShowCreateVariable(false);
+    setShowNounSuggestions(false); // Close noun suggestions when variable is created
   };
 
   const updateVariable = (variableId, updates) => {
@@ -858,6 +884,98 @@ function App() {
 
   // Get existing nodes for linking
   const existingNodes = Object.keys(story);
+
+  // Function to detect common nouns in text using dictionary API
+  const detectCommonNouns = async (text) => {
+    console.log('detectCommonNouns called with:', text);
+    if (!text) return [];
+    
+    // Common nouns that are often good variables (fallback)
+    const commonNouns = [
+      'health', 'energy', 'strength', 'intelligence', 'wisdom', 'charisma', 'luck',
+      'money', 'gold', 'coins', 'treasure', 'items', 'weapons', 'armor', 'tools',
+      'food', 'water', 'supplies', 'resources', 'knowledge', 'secrets', 'clues',
+      'reputation', 'fame', 'influence', 'power', 'magic', 'mana', 'experience',
+      'level', 'skill', 'ability', 'talent', 'relationship', 'friendship', 'trust',
+      'fear', 'courage', 'confidence', 'stress', 'happiness', 'sadness', 'anger',
+      'time', 'patience', 'determination', 'focus', 'creativity', 'curiosity',
+      'potions', 'scrolls', 'artifacts', 'gems', 'crystals', 'runes', 'spells',
+      'monsters', 'creatures', 'beings', 'people', 'characters', 'heroes', 'villains'
+    ];
+    
+    // Split text into words and find potential nouns
+    const words = text.toLowerCase().split(/\s+/);
+    console.log('Words found:', words);
+    const detectedNouns = [];
+    
+    // Check each word using the dictionary API
+    for (const word of words) {
+      const cleanWord = word.replace(/[^\w]/g, '');
+      console.log('Checking word:', word, '-> clean:', cleanWord);
+      
+      if (cleanWord.length < 4) continue;
+      
+      // First check if it's in our common nouns list
+      if (commonNouns.includes(cleanWord)) {
+        console.log('Found common noun from list:', cleanWord);
+        detectedNouns.push(cleanWord);
+        continue;
+      }
+      
+      // Check if it ends with 's' (common for plural nouns)
+      if (cleanWord.endsWith('s')) {
+        console.log('Found word ending in s (likely plural noun):', cleanWord);
+        detectedNouns.push(cleanWord);
+        continue;
+      }
+      
+      // Use dictionary API to check if it's a noun
+      try {
+        const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${cleanWord}`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data && data[0] && data[0].meanings) {
+            // Check if any meaning has the part of speech "noun"
+            const isNoun = data[0].meanings.some(meaning => 
+              meaning.partOfSpeech === 'noun'
+            );
+            if (isNoun) {
+              console.log('Found noun via API:', cleanWord);
+              detectedNouns.push(cleanWord);
+            } else {
+              console.log('Word exists but is not a noun:', cleanWord);
+            }
+          }
+        } else {
+          console.log('Word not found in dictionary:', cleanWord);
+        }
+      } catch (error) {
+        console.log('Error checking word with API:', cleanWord, error);
+        // Use suffix fallback for common noun patterns
+        const commonNounSuffixes = ['tion', 'sion', 'ment', 'ness', 'ity', 'ance', 'ence'];
+        const hasNounSuffix = commonNounSuffixes.some(suffix => cleanWord.endsWith(suffix));
+        if (hasNounSuffix && cleanWord.length > 4) {
+          console.log('Likely noun by suffix:', cleanWord);
+          detectedNouns.push(cleanWord);
+        }
+      }
+    }
+    
+    console.log('Final detected nouns:', detectedNouns);
+    // Remove duplicates and return
+    return [...new Set(detectedNouns)];
+  };
+
+  // Function to handle noun click for variable creation
+  const handleNounClick = (noun) => {
+    setNewVariable(prev => ({
+      ...prev,
+      name: noun.charAt(0).toUpperCase() + noun.slice(1),
+      description: `Track ${noun} in the story`
+    }));
+    setShowCreateVariable(true);
+    setShowNounSuggestions(false);
+  };
 
   return (
     <div
@@ -1860,6 +1978,83 @@ function App() {
           </button>
         )}
       </div>
+
+      {/* Noun Suggestions for Variable Creation */}
+      {showNounSuggestions && suggestedNouns.length > 0 && (
+        <div className="noun-suggestions" style={{
+          marginTop: '16px',
+          padding: '16px',
+          background: 'rgba(255, 255, 255, 0.15)',
+          borderRadius: '8px',
+          border: `2px solid ${getTextColor(currentNode.color)}`
+        }}>
+          <div style={{ marginBottom: '12px' }}>
+            <h4 style={{ 
+              margin: '0 0 8px 0', 
+              color: getTextColor(currentNode.color),
+              fontSize: '16px'
+            }}>
+              💡 Suggested Variables from "{lastCreatedChoice}"
+            </h4>
+            <p style={{ 
+              margin: '0', 
+              color: getTextColor(currentNode.color),
+              fontSize: '14px',
+              opacity: 0.8
+            }}>
+              Click on any highlighted word to create a variable for it:
+            </p>
+          </div>
+          
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            {suggestedNouns.map((noun, index) => (
+              <button
+                key={index}
+                onClick={() => handleNounClick(noun)}
+                style={{
+                  padding: '8px 12px',
+                  borderRadius: '20px',
+                  border: `2px solid ${getTextColor(currentNode.color)}`,
+                  background: 'rgba(255, 255, 255, 0.2)',
+                  color: getTextColor(currentNode.color),
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: 'bold',
+                  transition: 'all 0.2s',
+                  textTransform: 'capitalize'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.background = 'rgba(255, 255, 255, 0.3)';
+                  e.target.style.transform = 'scale(1.05)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.background = 'rgba(255, 255, 255, 0.2)';
+                  e.target.style.transform = 'scale(1)';
+                }}
+              >
+                {noun}
+              </button>
+            ))}
+          </div>
+          
+          <div style={{ marginTop: '12px', textAlign: 'right' }}>
+            <button
+              onClick={() => setShowNounSuggestions(false)}
+              style={{
+                padding: '6px 12px',
+                borderRadius: '6px',
+                border: `1px solid ${getTextColor(currentNode.color)}`,
+                background: 'transparent',
+                color: getTextColor(currentNode.color),
+                cursor: 'pointer',
+                fontSize: '12px'
+              }}
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Color picker section */}
       <div className="color-picker-section" style={{
