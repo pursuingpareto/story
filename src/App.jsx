@@ -705,6 +705,29 @@ function App() {
     }
   }
 
+  // Random choice selection function
+  function makeRandomChoice() {
+    if (currentNode.options && currentNode.options.length > 0) {
+      const randomIndex = Math.floor(Math.random() * currentNode.options.length);
+      const randomOption = currentNode.options[randomIndex];
+      
+      // Add some visual feedback
+      const choiceButtons = document.querySelectorAll('.choice-button');
+      if (choiceButtons[randomIndex]) {
+        choiceButtons[randomIndex].style.transform = 'scale(1.1)';
+        choiceButtons[randomIndex].style.boxShadow = '0 0 20px rgba(255, 255, 255, 0.8)';
+        
+        setTimeout(() => {
+          choiceButtons[randomIndex].style.transform = 'scale(1)';
+          choiceButtons[randomIndex].style.boxShadow = 'none';
+          handleChoice(randomOption);
+        }, 1000);
+      } else {
+        handleChoice(randomOption);
+      }
+    }
+  }
+
   function resetStory() {
     const hasUnsavedChanges = JSON.stringify(story) !== JSON.stringify(initialStory);
     
@@ -1135,6 +1158,43 @@ function App() {
           )}
         </div>
       </div>
+
+      {/* Quick Back Button - Always Visible */}
+      {history.length > 0 && (
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          marginBottom: '16px'
+        }}>
+          <button
+            onClick={goBack}
+            style={{
+              color: getTextColor(currentNode.color),
+              background: 'rgba(255, 255, 255, 0.15)',
+              border: `2px solid ${getTextColor(currentNode.color)}`,
+              borderRadius: '20px',
+              padding: '8px 20px',
+              fontSize: '14px',
+              fontWeight: '500',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.background = 'rgba(255, 255, 255, 0.25)';
+              e.target.style.transform = 'translateY(-2px)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.background = 'rgba(255, 255, 255, 0.15)';
+              e.target.style.transform = 'translateY(0)';
+            }}
+          >
+            ⬅️ Back to Previous Choice
+          </button>
+        </div>
+      )}
 
       {/* Variables Panel */}
       {showVariablesPanel && (
@@ -1703,6 +1763,46 @@ function App() {
         }}
       />
 
+      {/* Random Choice Button */}
+      {currentNode.options && currentNode.options.length > 0 && (
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          marginBottom: '20px'
+        }}>
+          <button
+            onClick={makeRandomChoice}
+            style={{
+              color: getTextColor(currentNode.color),
+              background: 'rgba(255, 255, 255, 0.15)',
+              border: `2px solid ${getTextColor(currentNode.color)}`,
+              borderRadius: '25px',
+              padding: '12px 24px',
+              fontSize: '16px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.background = 'rgba(255, 255, 255, 0.25)';
+              e.target.style.transform = 'translateY(-2px)';
+              e.target.style.boxShadow = '0 6px 20px rgba(0, 0, 0, 0.3)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.background = 'rgba(255, 255, 255, 0.15)';
+              e.target.style.transform = 'translateY(0)';
+              e.target.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.2)';
+            }}
+          >
+            🎲 Let Fate Decide
+          </button>
+        </div>
+      )}
+
       {/* Choice buttons */}
       <div className="choice-buttons">
         {currentNode.options && currentNode.options.length > 0 ? (
@@ -2082,17 +2182,31 @@ function App() {
       </div>
 
       {/* Navigation buttons */}
-      <div className="navigation-buttons">
+      <div className="navigation-buttons" style={{
+        display: 'flex',
+        gap: '12px',
+        justifyContent: 'center',
+        marginBottom: '16px'
+      }}>
         <button
           className="nav-button"
           onClick={goBack}
           disabled={history.length === 0}
           style={{
             color: getTextColor(currentNode.color),
-            borderColor: getTextColor(currentNode.color)
+            borderColor: getTextColor(currentNode.color),
+            background: history.length > 0 ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.1)',
+            padding: '12px 24px',
+            fontSize: '16px',
+            fontWeight: 'bold',
+            borderRadius: '8px',
+            border: `2px solid ${getTextColor(currentNode.color)}`,
+            cursor: history.length > 0 ? 'pointer' : 'not-allowed',
+            opacity: history.length > 0 ? 1 : 0.5,
+            transition: 'all 0.3s ease'
           }}
         >
-          Go Back
+          ⬅️ Go Back {history.length > 0 && `(${history.length} step${history.length > 1 ? 's' : ''})`}
         </button>
       </div>
 
